@@ -42,3 +42,23 @@ def read_task(*, session: Session = Depends(get_session), task_id: str):
             detail=f"Task with ID {task_id} not found",
         )
     return task
+
+
+@router.put("/{task_id}", response_model=TaskRead)
+def update_task(
+    *, session: Session = Depends(get_session), task_id: str, task: TaskCreate
+):
+    db_task = session.get(Task, task_id)
+    if not db_task:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Task with ID {task_id} not found",
+        )
+
+    task_data = task.dict()
+    for key, value in task_data.items():
+        setattr(db_task, key, value)
+    session.add(db_task)
+    session.commit()
+    session.refresh(db_task)
+    return db_task
