@@ -62,3 +62,16 @@ def update_task(
     session.commit()
     session.refresh(db_task)
     return db_task
+
+
+@router.delete("/{task_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_task(*, session: Session = Depends(get_session), task_id: str):
+    task = session.get(Task, task_id)
+    if not task:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Task with ID {task_id} not found",
+        )
+    session.delete(task)
+    session.commit()
+    return None
