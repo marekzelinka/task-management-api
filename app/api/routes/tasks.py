@@ -22,8 +22,8 @@ def create_task(*, session: SessionDep, task: Annotated[TaskCreate, Body()]):
 def read_tasks(
     *,
     session: SessionDep,
-    offset: Annotated[int, Query()] = 0,
-    limit: Annotated[int, Query()] = 100,
+    offset: Annotated[int, Query(ge=0)] = 0,
+    limit: Annotated[int, Query(gt=0)] = 100,
     completed: Annotated[bool | None, Query()] = None,
 ):
     query = select(Task)
