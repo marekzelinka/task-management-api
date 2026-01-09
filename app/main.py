@@ -4,10 +4,10 @@ from datetime import datetime, timezone
 from fastapi import FastAPI, HTTPException, Request, status
 from fastapi.responses import JSONResponse
 
-from .core.cors import setup_cors
-from .core.db import create_db_and_tables
-from .core.logging import logger  # noqa: F401
-from .routes import tasks
+from app.core.cors import setup_cors
+from app.core.db import create_db_and_tables
+from app.core.logging import logger  # noqa: F401
+from app.routers import tasks
 
 
 @asynccontextmanager
