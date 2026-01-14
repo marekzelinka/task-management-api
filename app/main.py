@@ -1,17 +1,17 @@
 from contextlib import asynccontextmanager
-from datetime import datetime, timezone
+from dataclasses import dataclass
 
-from fastapi import FastAPI, HTTPException, Request, status
-from fastapi.responses import JSONResponse
+from fastapi import FastAPI, status
+from fastapi.middleware.cors import CORSMiddleware
 
-from app.core.cors import setup_cors
+from app.core.config import config
 from app.core.db import create_db_and_tables
-from app.core.logging import logger  # noqa: F401
+from app.deps import SessionDep
 from app.routers import tasks
 
 
 @asynccontextmanager
-async def lifespan(app: FastAPI):
+async def lifespan(_app: FastAPI):
     create_db_and_tables()
     yield
 
@@ -23,37 +23,31 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-setup_cors(app)
+# Set all CORS enabled origins
+if config.all_cors_origins:
+    app.add_middleware(
+        CORSMiddleware,  # ty:ignore[invalid-argument-type]
+        allow_origins=config.all_cors_origins,
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
+
 
 app.include_router(tasks.router)
+
+
+@dataclass
+class HealthCheck:
+    status: str
 
 
 @app.get(
     "/health",
     tags=["status"],
     summary="Perform a Health Check",
+    status_code=status.HTTP_200_OK,
+    response_model=HealthCheck,
 )
-async def read_health():
-    return {status: "OK"}
-
-
-@app.exception_handler(Exception)
-async def global_exception_handler(request: Request, exc: Exception):
-    logger.error(f"Unexpected error: {str(exc)}")
-
-    return JSONResponse(
-        status_code=500,
-        content={"detail": "An unexpected error occurred", "path": request.url.path},
-    )
-
-
-@app.exception_handler(HTTPException)
-async def enhanced_error_handler(request: Request, exc: HTTPException):
-    return JSONResponse(
-        status_code=exc.status_code,
-        content={
-            "detail": exc.detail,
-            "error_code": exc.headers.get("X-Error-Code") if exc.headers else None,
-            "timestamp": datetime.now(timezone.utc).isoformat(),
-        },
-    )
+async def read_health(*, _session: SessionDep) -> HealthCheck:
+    return HealthCheck(status="ok")

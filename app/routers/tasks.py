@@ -1,16 +1,22 @@
+import uuid
+from collections.abc import Sequence
 from typing import Annotated
 
 from fastapi import APIRouter, Body, HTTPException, Path, Query, status
 from sqlmodel import select
 
-from app.dependencies import SessionDep
+from app.deps import SessionDep
 from app.models import Task, TaskCreate, TaskPublic, TaskUpdate
 
 router = APIRouter(prefix="/tasks", tags=["tasks"])
 
 
-@router.post("/", response_model=TaskPublic, status_code=status.HTTP_201_CREATED)
-async def create_task(*, session: SessionDep, task: Annotated[TaskCreate, Body()]):
+@router.post("/", status_code=status.HTTP_201_CREATED, response_model=TaskPublic)
+async def create_task(
+    *,
+    session: SessionDep,
+    task: Annotated[TaskCreate, Body()],
+) -> Task:
     db_task = Task.model_validate(task)
     session.add(db_task)
     session.commit()
@@ -25,7 +31,7 @@ async def read_tasks(
     offset: Annotated[int, Query(ge=0)] = 0,
     limit: Annotated[int, Query(gt=0)] = 100,
     completed: Annotated[bool | None, Query()] = None,
-):
+) -> Sequence[Task]:
     query = select(Task)
     if completed is not None:
         query = query.where(Task.completed == completed)
@@ -34,7 +40,11 @@ async def read_tasks(
 
 
 @router.get("/{task_id}", response_model=TaskPublic)
-async def read_task(*, session: SessionDep, task_id: Annotated[str, Path()]):
+async def read_task(
+    *,
+    session: SessionDep,
+    task_id: Annotated[uuid.UUID, Path()],
+) -> Task:
     task = session.get(Task, task_id)
     if not task:
         raise HTTPException(
@@ -48,9 +58,9 @@ async def read_task(*, session: SessionDep, task_id: Annotated[str, Path()]):
 async def update_task(
     *,
     session: SessionDep,
-    task_id: Annotated[str, Path()],
+    task_id: Annotated[uuid.UUID, Path()],
     task: Annotated[TaskUpdate, Body()],
-):
+) -> Task:
     db_task = session.get(Task, task_id)
     if not db_task:
         raise HTTPException(
@@ -66,7 +76,11 @@ async def update_task(
 
 
 @router.delete("/{task_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_task(*, session: SessionDep, task_id: Annotated[str, Path()]):
+async def delete_task(
+    *,
+    session: SessionDep,
+    task_id: Annotated[uuid.UUID, Path()],
+) -> None:
     task = session.get(Task, task_id)
     if not task:
         raise HTTPException(
