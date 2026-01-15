@@ -33,6 +33,37 @@ async def create_task(
     return db_task
 
 
+@router.post(
+    "/{task_id}/duplicate",
+    status_code=status.HTTP_201_CREATED,
+    response_model=TaskPublic,
+)
+async def create_task_copy(
+    *,
+    session: SessionDep,
+    current_user: CurrentUserDep,
+    task_id: Annotated[uuid.UUID, Path()],
+) -> Task:
+    results = await session.exec(
+        select(Task).where(Task.id == task_id, Task.owner_id == current_user.id)
+    )
+    db_task = results.first()
+    if not db_task:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Task not found"
+        )
+    task_data = db_task.model_dump(
+        exclude={"id", "completed", "created_at", "updated_at"}
+    )
+    new_task = Task.model_validate(
+        task_data, update={"title": f"{task_data['title']} (Copy)"}
+    )
+    session.add(new_task)
+    await session.commit()
+    await session.refresh(new_task)
+    return new_task
+
+
 @router.get("/", response_model=list[TaskPublic])
 async def read_tasks(
     *,
