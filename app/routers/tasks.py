@@ -8,9 +8,11 @@ from sqlmodel import col, select
 
 from app.deps import CurrentUserDep, SessionDep
 from app.models import (
+    Project,
     Task,
     TaskCreate,
     TaskPublic,
+    TaskPublicWithProject,
     TaskUpdate,
 )
 
@@ -110,7 +112,7 @@ async def read_overdue_tasks(
     return results.all()
 
 
-@router.get("/{task_id}", response_model=TaskPublic)
+@router.get("/{task_id}", response_model=TaskPublicWithProject)
 async def read_task(
     *,
     session: SessionDep,
@@ -128,7 +130,39 @@ async def read_task(
     return task
 
 
-@router.patch("/{task_id}", response_model=TaskPublic)
+@router.put("/{task_id}/projects/{project_id}", response_model=TaskPublicWithProject)
+async def assign_task_to_project(
+    *,
+    session: SessionDep,
+    current_user: CurrentUserDep,
+    task_id: Annotated[uuid.UUID, Path()],
+    project_id: Annotated[uuid.UUID, Path()],
+) -> Task:
+    results = await session.exec(
+        select(Task).where(Task.id == task_id, Task.owner_id == current_user.id)
+    )
+    task = results.first()
+    if not task:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Task not found"
+        )
+    results = await session.exec(
+        select(Project).where(
+            Project.id == project_id, Project.owner_id == current_user.id
+        )
+    )
+    project = results.first()
+    if not project:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Project not found"
+        )
+    task.project_id = project.id
+    await session.commit()
+    await session.refresh(task)
+    return task
+
+
+@router.patch("/{task_id}", response_model=TaskPublicWithProject)
 async def update_task(
     *,
     session: SessionDep,
@@ -165,8 +199,7 @@ async def delete_task(
     task = results.first()
     if not task:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Task not found",
+            status_code=status.HTTP_404_NOT_FOUND, detail="Task not found"
         )
     await session.delete(task)
     await session.commit()

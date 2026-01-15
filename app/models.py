@@ -27,6 +27,7 @@ class User(UserBase, table=True):
     )
 
     tasks: list[Task] = Relationship(back_populates="owner", cascade_delete=True)
+    projects: list[Project] = Relationship(back_populates="owner", cascade_delete=True)
 
 
 class UserCreate(UserBase):
@@ -45,6 +46,51 @@ class Token(SQLModel):
     token_type: str
 
 
+class ProjectBase(SQLModel):
+    title: str = Field(index=True)
+
+
+class Project(ProjectBase, table=True):
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True, index=True)
+
+    created_at: datetime = Field(
+        default_factory=lambda: datetime.now(UTC),
+        sa_column=Column(DateTime(timezone=True), nullable=False),
+    )
+    updated_at: datetime = Field(
+        default_factory=lambda: datetime.now(UTC),
+        sa_column=Column(
+            DateTime(timezone=True), nullable=False, onupdate=lambda: datetime.now(UTC)
+        ),
+    )
+
+    tasks: list[Task] = Relationship(
+        back_populates="project",
+        sa_relationship_kwargs={"lazy": "selectin"},
+    )
+    owner_id: uuid.UUID = Field(foreign_key="user.id", ondelete="CASCADE")
+    owner: User = Relationship(back_populates="projects")
+
+
+class ProjectCreate(ProjectBase):
+    pass
+
+
+class ProjectPublic(ProjectBase):
+    id: uuid.UUID
+
+    created_at: datetime
+    updated_at: datetime
+
+
+class ProjectPublicWithTasks(ProjectPublic):
+    tasks: list[TaskPublic] = []
+
+
+class ProjectUpdate(SQLModel):
+    title: str | None = None
+
+
 class TaskBase(SQLModel):
     title: str = Field(index=True)
     description: str | None = Field(default=None)
@@ -53,6 +99,8 @@ class TaskBase(SQLModel):
     due_date: datetime | None = Field(
         default=None, sa_column=Column(DateTime(timezone=True), index=True)
     )
+
+    project_id: uuid.UUID | None = Field(default=None, foreign_key="project.id")
 
 
 class Task(TaskBase, table=True):
@@ -69,6 +117,9 @@ class Task(TaskBase, table=True):
         ),
     )
 
+    project: Project | None = Relationship(
+        back_populates="tasks", sa_relationship_kwargs={"lazy": "selectin"}
+    )
     owner_id: uuid.UUID = Field(foreign_key="user.id", ondelete="CASCADE")
     owner: User = Relationship(back_populates="tasks")
 
@@ -88,7 +139,9 @@ class TaskPublic(TaskBase):
     created_at: datetime
     updated_at: datetime
 
-    owner_id: uuid.UUID
+
+class TaskPublicWithProject(TaskPublic):
+    project: ProjectPublic | None = None
 
 
 class TaskUpdate(SQLModel):
@@ -97,3 +150,5 @@ class TaskUpdate(SQLModel):
     priority: int | None = Field(default=None, ge=1, le=5)
     completed: bool | None = None
     due_date: datetime | None = Field(default=None)
+
+    project_id: uuid.UUID | None = None
