@@ -54,13 +54,6 @@ class TaskBase(SQLModel):
         default=None, sa_column=Column(DateTime(timezone=True), index=True)
     )
 
-    @field_validator("due_date")
-    @classmethod
-    def check_due_date_is_future(cls, v: datetime | None) -> datetime | None:
-        if v is not None and v < datetime.now(UTC):
-            raise ValueError("due_date must be in the future")
-        return v
-
 
 class Task(TaskBase, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True, index=True)
@@ -81,7 +74,12 @@ class Task(TaskBase, table=True):
 
 
 class TaskCreate(TaskBase):
-    pass
+    @field_validator("due_date")
+    @classmethod
+    def check_due_date_is_future(cls, v: datetime | None) -> datetime | None:
+        if v is not None and v < datetime.now(UTC):
+            raise ValueError("due_date must be in the future")
+        return v
 
 
 class TaskPublic(TaskBase):

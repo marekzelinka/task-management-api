@@ -4,7 +4,7 @@ from datetime import UTC, datetime, time
 from enum import StrEnum, auto
 from typing import Annotated
 
-from fastapi import APIRouter, Body, HTTPException, Path, Query, status
+from fastapi import APIRouter, Body, Depends, HTTPException, Path, Query, status
 from sqlmodel import col, select
 
 from app.deps import CurrentUserDep, SessionDep
@@ -30,6 +30,19 @@ async def create_task(
 class TaskView(StrEnum):
     TODAY = auto()
     UPCOMMING = auto()
+    OVERDUE = auto()
+
+
+def validate_task_filters(
+    completed: Annotated[bool | None, Query()] = None,
+    view: Annotated[TaskView | None, Query()] = None,
+) -> tuple[bool | None, TaskView | None]:
+    if completed is not None and view is not None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Parameters 'completed' and 'view' are mutually exclusive, provide only one or the other",
+        )
+    return completed, view
 
 
 @router.get("/", response_model=list[TaskPublic])
@@ -44,22 +57,35 @@ async def read_tasks(
         ),
     ] = 0,
     limit: Annotated[int, Query(gt=0)] = 100,
-    completed: Annotated[bool | None, Query()] = None,
-    view: Annotated[TaskView | None, Query()] = None,
+    filters: Annotated[
+        tuple[bool | None, TaskView | None], Depends(validate_task_filters)
+    ],
 ) -> Sequence[Task]:
     query = select(Task).where(Task.owner_id == current_user.id)
-    if view is not None and completed is None:
-        query = query.where(col(Task.completed).is_(False))
-    elif completed is not None:
-        query = query.where(Task.completed == completed)
-    today = datetime.now(UTC)
-    today_end = datetime.combine(today.date(), time.max, tzinfo=UTC)
+    completed, view = filters
+    now = datetime.now(UTC)
+    # Apply view-specific filters
     if view == TaskView.TODAY:
-        today_start = datetime.combine(today.date(), time.min, tzinfo=UTC)
+        today_end = datetime.combine(now.date(), time.max, tzinfo=UTC)
+        today_start = datetime.combine(now.date(), time.min, tzinfo=UTC)
         query = query.where(col(Task.due_date).between(today_start, today_end))
     elif view == TaskView.UPCOMMING:
-        query = query.where(col(Task.due_date) > today_end)
-    results = await session.exec(query.offset(offset).limit(limit))
+        query = query.where(col(Task.due_date) > now)
+    elif view == TaskView.OVERDUE:
+        query = query.where(col(Task.due_date) < now)
+    # Apply task completion defaults
+    if completed is not None:
+        # Respect the explicit user fiter
+        query = query.where(Task.completed == completed)
+    elif view is not None:
+        # Default behavior for prespectives when COMPLETED is not explicitly set
+        query = query.where(col(Task.completed).is_(False))
+    # Apply pagination and ordering
+    results = await session.exec(
+        query.order_by(col(Task.due_date).asc().nulls_last())
+        .offset(offset)
+        .limit(limit)
+    )
     return results.all()
 
 
