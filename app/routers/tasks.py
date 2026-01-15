@@ -72,10 +72,13 @@ async def read_tasks(
     offset: Annotated[int, Query(ge=0)] = 0,
     limit: Annotated[int, Query(gt=0)] = 100,
     completed: Annotated[bool | None, Query()] = None,
+    priority: Annotated[int | None, Query(ge=1, le=5)] = None,
 ) -> Sequence[Task]:
     query = select(Task).where(Task.owner_id == current_user.id)
     if completed is not None:
         query = query.where(Task.completed == completed)
+    if priority is not None:
+        query = query.where(Task.priority == priority)
     results = await session.exec(query.offset(offset).limit(limit))
     return results.all()
 
@@ -87,17 +90,23 @@ async def read_upcomming_tasks(
     current_user: CurrentUserDep,
     offset: Annotated[int, Query(ge=0)] = 0,
     limit: Annotated[int, Query(gt=0)] = 100,
+    priority: Annotated[int | None, Query(ge=1, le=5)] = None,
 ) -> Sequence[Task]:
     now = datetime.now(UTC)
-    results = await session.exec(
+    query = (
         select(Task)
         .where(Task.owner_id == current_user.id)
         .where(col(Task.due_date) > now)
         .where(col(Task.completed).is_(False))
-        .order_by(col(Task.due_date).asc().nulls_last())
+    )
+    if priority is not None:
+        query = query.where(Task.priority == priority)
+    results = await session.exec(
+        query.order_by(col(Task.due_date).asc().nulls_last())
         .offset(offset)
         .limit(limit)
     )
+
     return results.all()
 
 
@@ -108,18 +117,20 @@ async def read_due_today_tasks(
     current_user: CurrentUserDep,
     offset: Annotated[int, Query(ge=0)] = 0,
     limit: Annotated[int, Query(gt=0)] = 100,
+    priority: Annotated[int | None, Query(ge=1, le=5)] = None,
 ) -> Sequence[Task]:
     now = datetime.now(UTC)
     today_end = datetime.combine(now.date(), time.max, tzinfo=UTC)
     today_start = datetime.combine(now.date(), time.min, tzinfo=UTC)
-    results = await session.exec(
+    query = (
         select(Task)
         .where(Task.owner_id == current_user.id)
         .where(col(Task.due_date).between(today_start, today_end))
         .where(col(Task.completed).is_(False))
-        .offset(offset)
-        .limit(limit)
     )
+    if priority is not None:
+        query = query.where(Task.priority == priority)
+    results = await session.exec(query.offset(offset).limit(limit))
     return results.all()
 
 
@@ -130,16 +141,18 @@ async def read_overdue_tasks(
     current_user: CurrentUserDep,
     offset: Annotated[int, Query(ge=0)] = 0,
     limit: Annotated[int, Query(gt=0)] = 100,
+    priority: Annotated[int | None, Query(ge=1, le=5)] = None,
 ) -> Sequence[Task]:
     now = datetime.now(UTC)
-    results = await session.exec(
+    query = (
         select(Task)
         .where(Task.owner_id == current_user.id)
         .where(col(Task.due_date) < now)
         .where(col(Task.completed).is_(False))
-        .offset(offset)
-        .limit(limit)
     )
+    if priority is not None:
+        query = query.where(Task.priority == priority)
+    results = await session.exec(query.offset(offset).limit(limit))
     return results.all()
 
 
