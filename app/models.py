@@ -1,7 +1,7 @@
 import uuid
 from datetime import UTC, datetime
 
-from pydantic import EmailStr
+from pydantic import EmailStr, field_validator
 from sqlmodel import Column, DateTime, Field, Relationship, SQLModel
 
 
@@ -50,6 +50,18 @@ class TaskBase(SQLModel):
     description: str | None = Field(default=None)
     priority: int = Field(default=1, ge=1, le=5)
     completed: bool = Field(default=False)
+    due_date: datetime | None = Field(
+        default=None,
+        sa_column=Column(DateTime(timezone=True), nullable=False, index=True),
+        schema_extra={"examples": [None]},
+    )
+
+    @field_validator("due_date")
+    @classmethod
+    def check_due_date_is_future(cls, v: datetime | None) -> datetime | None:
+        if v is not None and v < datetime.now(UTC):
+            raise ValueError("due_date must be in the future")
+        return v
 
 
 class Task(TaskBase, table=True):
@@ -88,3 +100,4 @@ class TaskUpdate(SQLModel):
     description: str | None = None
     priority: int | None = Field(default=None, ge=1, le=5)
     completed: bool | None = None
+    due_date: datetime | None = Field(default=None)
