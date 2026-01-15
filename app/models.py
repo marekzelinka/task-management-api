@@ -51,9 +51,7 @@ class TaskBase(SQLModel):
     priority: int = Field(default=1, ge=1, le=5)
     completed: bool = Field(default=False)
     due_date: datetime | None = Field(
-        default=None,
-        sa_column=Column(DateTime(timezone=True), nullable=False, index=True),
-        schema_extra={"examples": [None]},
+        default=None, sa_column=Column(DateTime(timezone=True), index=True)
     )
 
     @field_validator("due_date")
