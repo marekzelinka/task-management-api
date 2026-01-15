@@ -234,3 +234,35 @@ async def delete_task(
         )
     await session.delete(task)
     await session.commit()
+
+
+@router.delete("/{task_id}/projects/{project_id}", response_model=TaskPublicWithProject)
+async def remove_task_from_project(
+    *,
+    session: SessionDep,
+    current_user: CurrentUserDep,
+    task_id: Annotated[uuid.UUID, Path()],
+    project_id: Annotated[uuid.UUID, Path()],
+) -> Task:
+    results = await session.exec(
+        select(Task).where(Task.id == task_id, Task.owner_id == current_user.id)
+    )
+    task = results.first()
+    if not task:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Task not found"
+        )
+    results = await session.exec(
+        select(Project).where(
+            Project.id == project_id, Project.owner_id == current_user.id
+        )
+    )
+    project = results.first()
+    if not project:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Project not found"
+        )
+    task.project_id = None
+    await session.commit()
+    await session.refresh(task)
+    return task
