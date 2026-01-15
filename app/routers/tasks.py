@@ -123,8 +123,7 @@ async def read_task(
     task = results.first()
     if not task:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Task not found",
+            status_code=status.HTTP_404_NOT_FOUND, detail="Task not found"
         )
     return task
 
@@ -143,8 +142,7 @@ async def update_task(
     db_task = results.first()
     if not db_task:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Task not found",
+            status_code=status.HTTP_404_NOT_FOUND, detail="Task not found"
         )
     task_data = task.model_dump(exclude_unset=True)
     db_task.sqlmodel_update(task_data)
