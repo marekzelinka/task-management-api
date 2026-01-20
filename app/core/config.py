@@ -1,4 +1,4 @@
-from typing import Annotated, Any
+from typing import Annotated
 
 from pydantic import (
     AnyUrl,
@@ -9,11 +9,12 @@ from pydantic import (
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
-def parse_cors(v: Any) -> list[str] | str:
+def parse_cors(v: str | list[str] | None) -> list[str] | str:
     if isinstance(v, str) and not v.startswith("["):
         return [i.strip() for i in v.split(",") if i.strip()]
-    elif isinstance(v, list | str):
+    if isinstance(v, list | str):
         return v
+
     raise ValueError(v)
 
 
@@ -25,20 +26,20 @@ class Settings(BaseSettings):
         extra="ignore",
     )
 
-    pghost: str
-    pgdatabase: str
-    pguser: str
-    pgpassword: str
+    pg_host: str
+    pg_database: str
+    pg_user: str
+    pg_password: str
 
     @computed_field
     @property
     def sqlalchemy_database_uri(self) -> PostgresDsn:
         return PostgresDsn.build(
             scheme="postgresql+asyncpg",
-            username=self.pguser,
-            password=self.pgpassword,
-            host=self.pghost,
-            path=self.pgdatabase,
+            username=self.pg_user,
+            password=self.pg_password,
+            host=self.pg_host,
+            path=self.pg_database,
         )
 
     cors_origins: Annotated[list[AnyUrl] | str, BeforeValidator(parse_cors)] = []

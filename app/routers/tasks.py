@@ -27,9 +27,11 @@ async def create_task(
     task: Annotated[TaskCreate, Body()],
 ) -> Task:
     db_task = Task.model_validate(task, update={"owner_id": current_user.id})
+
     session.add(db_task)
     await session.commit()
     await session.refresh(db_task)
+
     return db_task
 
 
@@ -52,15 +54,17 @@ async def create_task_copy(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Task not found"
         )
+
     task_data = db_task.model_dump(
         exclude={"id", "completed", "created_at", "updated_at"}
     )
-    new_task = Task.model_validate(
-        task_data, update={"title": f"{task_data['title']} (Copy)"}
-    )
+    copy_title = f"{task_data['title']} (Copy)"
+    new_task = Task.model_validate(task_data, update={"title": copy_title})
+
     session.add(new_task)
     await session.commit()
     await session.refresh(new_task)
+
     return new_task
 
 
@@ -79,7 +83,9 @@ async def read_tasks(
         query = query.where(Task.completed == completed)
     if priority is not None:
         query = query.where(Task.priority == priority)
+
     results = await session.exec(query.offset(offset).limit(limit))
+
     return results.all()
 
 
@@ -93,6 +99,7 @@ async def read_upcomming_tasks(
     priority: Annotated[int | None, Query(ge=1, le=5)] = None,
 ) -> Sequence[Task]:
     now = datetime.now(UTC)
+
     query = (
         select(Task)
         .where(Task.owner_id == current_user.id)
@@ -101,6 +108,7 @@ async def read_upcomming_tasks(
     )
     if priority is not None:
         query = query.where(Task.priority == priority)
+
     results = await session.exec(
         query.order_by(col(Task.due_date).asc().nulls_last())
         .offset(offset)
@@ -122,6 +130,7 @@ async def read_due_today_tasks(
     now = datetime.now(UTC)
     today_end = datetime.combine(now.date(), time.max, tzinfo=UTC)
     today_start = datetime.combine(now.date(), time.min, tzinfo=UTC)
+
     query = (
         select(Task)
         .where(Task.owner_id == current_user.id)
@@ -130,7 +139,9 @@ async def read_due_today_tasks(
     )
     if priority is not None:
         query = query.where(Task.priority == priority)
+
     results = await session.exec(query.offset(offset).limit(limit))
+
     return results.all()
 
 
@@ -144,6 +155,7 @@ async def read_overdue_tasks(
     priority: Annotated[int | None, Query(ge=1, le=5)] = None,
 ) -> Sequence[Task]:
     now = datetime.now(UTC)
+
     query = (
         select(Task)
         .where(Task.owner_id == current_user.id)
@@ -152,7 +164,9 @@ async def read_overdue_tasks(
     )
     if priority is not None:
         query = query.where(Task.priority == priority)
+
     results = await session.exec(query.offset(offset).limit(limit))
+
     return results.all()
 
 
@@ -171,6 +185,7 @@ async def read_task(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Task not found"
         )
+
     return task
 
 
@@ -190,6 +205,7 @@ async def assign_task_to_project(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Task not found"
         )
+
     results = await session.exec(
         select(Project).where(
             Project.id == project_id, Project.owner_id == current_user.id
@@ -200,9 +216,12 @@ async def assign_task_to_project(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Project not found"
         )
+
     task.project_id = project.id
+
     await session.commit()
     await session.refresh(task)
+
     return task
 
 
@@ -222,11 +241,14 @@ async def update_task(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Task not found"
         )
+
     task_data = task.model_dump(exclude_unset=True)
     db_task.sqlmodel_update(task_data)
+
     session.add(db_task)
     await session.commit()
     await session.refresh(db_task)
+
     return db_task
 
 
@@ -245,6 +267,7 @@ async def delete_task(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Task not found"
         )
+
     await session.delete(task)
     await session.commit()
 
@@ -265,6 +288,7 @@ async def remove_task_from_project(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Task not found"
         )
+
     results = await session.exec(
         select(Project).where(
             Project.id == project_id, Project.owner_id == current_user.id
@@ -275,7 +299,10 @@ async def remove_task_from_project(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Project not found"
         )
+
     task.project_id = None
+
     await session.commit()
     await session.refresh(task)
+
     return task

@@ -27,8 +27,10 @@ def create_access_token(data: dict, expires_delta: timedelta | None = None) -> s
         expire = datetime.now(UTC) + timedelta(
             minutes=config.access_token_expire_minutes
         )
+
     to_encode.update({"exp": expire})
     encoded_jwt = jwt.encode(to_encode, config.secret_key, algorithm=ALGORITHM)
+
     return encoded_jwt
 
 
@@ -38,6 +40,7 @@ def verify_token(token: str) -> str | None:
         username = payload.get("sub")
         if username is None:
             return None
+
         return username
     except jwt.PyJWTError:
         return None

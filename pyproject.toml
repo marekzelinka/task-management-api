@@ -11,7 +11,6 @@ dependencies = [
     "httpx>=0.28.1",
     "pydantic[email]>=2.12.5",
     "pydantic-settings>=2.12.0",
-    "python-dotenv>=1.2.1",
     "sqlalchemy>=2.0.45",
     "sqlmodel>=0.0.31",
     "uvicorn[standard]>=0.40.0",
@@ -27,27 +26,20 @@ dev = [
 ]
 
 [tool.ruff]
-exclude = ["alembic"]
+exclude = ["alembic/versions"]
 
 [tool.ruff.lint]
 select = [
-    "E",  # pycodestyle errors
-    "W",  # pycodestyle warnings
-    "F",  # pyflakes
-    "I",  # isort
-    "B",  # flake8-bugbear
-    "C4",  # flake8-comprehensions
-    "UP",  # pyupgrade
-    "ARG001", # unused arguments in functions
-    "T201",   # print statements are not allowed
+    "E", "F",     # Default Error & Pyflakes
+    "RUF",        # Ruff-specific rules
+    "W",          # pycodestyle warnings
+    "C4",         # flake8-comprehensions
+    "UP",         # pyupgrade
+    "ARG001",     # unused arguments in functions
+    "ANN",        # flake8-annotations (Strict type hinting)
+    "UP",         # pyupgrade (Newest type syntax: e.g., int | None)
+    "B",          # flake8-bugbear (Common logic errors)
+    "I",          # isort (Import sorting)
+    "FAST",       # FastAPI,
+    "ASYNC",      # flake8-async (crucial for FastAPI/Async SQLAlchemy)
 ]
-ignore = [
-    "E501",  # line too long, handled by black
-    "B008",  # do not perform function calls in argument defaults
-    "W191",  # indentation contains tabs
-    "B904",  # Allow raising exceptions without from e, for HTTPException
-]
-
-[tool.ruff.lint.pyupgrade]
-# Preserve types, even if a file imports `from __future__ import annotations`.
-keep-runtime-typing = true

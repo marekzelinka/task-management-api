@@ -1,10 +1,9 @@
-from dataclasses import dataclass
-
-from fastapi import FastAPI, status
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.core.config import config
 from app.deps import SessionDep
+from app.models import HealthCheck
 from app.routers import auth, projects, tasks
 
 app = FastAPI(
@@ -29,16 +28,10 @@ app.include_router(projects.router)
 app.include_router(tasks.router)
 
 
-@dataclass
-class HealthCheck:
-    status: str
-
-
 @app.get(
     "/health",
     tags=["status"],
-    summary="Perform a Health Check",
-    status_code=status.HTTP_200_OK,
+    summary="Perform a health check",
     response_model=HealthCheck,
 )
 async def read_health(*, _session: SessionDep) -> HealthCheck:

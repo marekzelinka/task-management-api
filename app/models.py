@@ -152,3 +152,15 @@ class TaskUpdate(SQLModel):
     due_date: datetime | None = Field(default=None)
 
     project_id: uuid.UUID | None = None
+
+
+class HealthCheck(SQLModel):
+    """Models a status check for our /health endpoint."""
+
+    status: str
+
+
+class Message(SQLModel):
+    """Models a generic messages, used as a response model in routes."""
+
+    message: str

@@ -24,7 +24,7 @@ if config.config_file_name is not None:
 # for 'autogenerate' support
 # from myapp import mymodel
 # target_metadata = mymodel.Base.metadata
-from app.models import SQLModel   # noqa: E402
+from app.models import SQLModel  # noqa: E402
 
 target_metadata = SQLModel.metadata
 

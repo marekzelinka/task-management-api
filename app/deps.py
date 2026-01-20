@@ -38,10 +38,12 @@ async def get_current_user(token: TokenDep, session: SessionDep) -> User:
     username = verify_token(token)
     if username is None:
         raise credentials_exception
+
     results = await session.exec(select(User).where(User.username == username))
     user = results.first()
     if not user:
         raise credentials_exception
+
     return user
 
 

@@ -25,9 +25,11 @@ async def create_project(
     project: Annotated[ProjectCreate, Body()],
 ) -> Project:
     db_project = Project.model_validate(project, update={"owner_id": current_user.id})
+
     session.add(db_project)
     await session.commit()
     await session.refresh(db_project)
+
     return db_project
 
 
@@ -45,6 +47,7 @@ async def read_projects(
         .offset(offset)
         .limit(limit)
     )
+
     return results.all()
 
 
@@ -65,6 +68,7 @@ async def read_project(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Project not found"
         )
+
     return project
 
 
@@ -86,11 +90,14 @@ async def update_project(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Project not found"
         )
+
     project_data = project.model_dump(exclude_unset=True)
     db_project.sqlmodel_update(project_data)
+
     session.add(db_project)
     await session.commit()
     await session.refresh(db_project)
+
     return db_project
 
 
@@ -111,5 +118,6 @@ async def delete_project(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Project not found"
         )
+
     await session.delete(project)
     await session.commit()
