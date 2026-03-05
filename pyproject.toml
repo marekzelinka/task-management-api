@@ -16,6 +16,7 @@ dependencies = [
     "pyjwt>=2.10.1",
     "python-multipart>=0.0.21",
     "pwdlib[argon2]>=0.3.0",
+    "slowapi>=0.1.9",
 ]
 
 [tool.pyrefly]
@@ -24,11 +25,11 @@ project-includes = [
     "**/*.ipynb",
 ]
 project-excludes= [
-    "alembic/versions/**/*.py"
+    "app/migrations/versions/*.py"
 ]
 
 [tool.ruff]
-exclude = ["alembic/versions"]
+extend-exclude = ["app/migrations/versions/*.py"]
 
 [tool.ruff.lint]
 select = [

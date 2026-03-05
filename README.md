@@ -88,10 +88,10 @@ Once started, access the interactive docs at: [http://localhost:8000/docs](http:
   uv run ruff format
   ```
 
-- Run typechecker using `ty check`: 
+- Run typechecker using `pyrefly check`: 
 
   ```sh
-  uv run ty check
+  uv run pyrefly check
   ```
 
 ## TODO

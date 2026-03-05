@@ -1,3 +1,5 @@
+// Folder-specific settings
+//
 // For a full list of overridable settings, and general information on folder-specific settings,
 // see the documentation: https://zed.dev/docs/configuring-zed#settings-files
 {
@@ -6,6 +8,14 @@
       "binary": {
         "path": ".venv/bin/pyrefly",
         "arguments": ["lsp"],
+      },
+      "settings": {
+        "python": {
+          "pythonPath": ".venv/bin/python",
+        },
+        "pyrefly": {
+          "python_interpreter": ".venv/bin/python",
+        },
       },
     },
   },

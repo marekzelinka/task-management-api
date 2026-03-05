@@ -3,10 +3,14 @@ import time
 from fastapi import FastAPI, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from slowapi import _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
+from slowapi.middleware import SlowAPIMiddleware
 
 from app.api.deps import SessionDep
 from app.api.main import api_router
 from app.core.config import settings
+from app.core.limiter import limiter
 
 app = FastAPI(
     title="Task Management API",
@@ -14,11 +18,20 @@ app = FastAPI(
     version="1.0.0",
 )
 
+# Setup rate limiter
+app.state.limiter = limiter
+app.add_exception_handler(
+    RateLimitExceeded,
+    _rate_limit_exceeded_handler,  # pyrefly:ignore[bad-argument-type]
+)
+app.add_middleware(SlowAPIMiddleware)
+
+
 # Set all CORS enabled origins while avoiding allow_origins=["*"] which permits
 # any domain and disables credential support. max_age reduces preflight request
 # overhead for frequently accessed endpoints.
 app.add_middleware(
-    CORSMiddleware,  # ty:ignore[invalid-argument-type]
+    CORSMiddleware,
     allow_origins=settings.all_cors_origins,
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE", "PATCH"],

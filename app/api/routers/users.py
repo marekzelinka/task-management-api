@@ -1,7 +1,8 @@
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, HTTPException, Request, status
 from sqlalchemy import select
 
 from app.api.deps import CurrentUserDep, SessionDep
+from app.core.limiter import limiter
 from app.core.security import hash_password
 from app.models import UserCreate, UserPublic
 from app.schema import User
@@ -10,8 +11,10 @@ router = APIRouter(prefix="/users", tags=["users"])
 
 
 @router.post("", status_code=status.HTTP_201_CREATED, response_model=UserPublic)
+@limiter.limit("5/minute")
 async def create_user(
     *,
+    request: Request,  # noqa: ARG001
     session: SessionDep,
     user: UserCreate,
 ) -> User:
