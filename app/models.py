@@ -118,7 +118,7 @@ class TaskPublic(BaseModel):
     description: str | None
     priority: Annotated[int, Field(ge=1, le=5)]
     completed: bool
-    due_date: DueDate | None
+    due_date: datetime | None
     project_id: int | None
 
 

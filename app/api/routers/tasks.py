@@ -5,7 +5,7 @@ from fastapi import APIRouter, HTTPException, Query, status
 from sqlalchemy import func, select
 from sqlalchemy.orm import joinedload, selectinload
 
-from app.deps import CurrentUserDep, PaginationParamsDep, SessionDep
+from app.api.deps import CurrentUserDep, PaginationParamsDep, SessionDep
 from app.models import (
     Paged,
     TaskCreate,

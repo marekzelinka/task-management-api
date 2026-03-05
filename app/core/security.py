@@ -4,9 +4,9 @@ import jwt
 from fastapi.security import OAuth2PasswordBearer
 from pwdlib import PasswordHash
 
-from app.core.config import config
+from app.core.config import settings
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/token")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl=f"{settings.api_v1_str}/token")
 
 
 password_hash = PasswordHash.recommended()
@@ -27,12 +27,12 @@ def create_access_token(data: dict, expires_delta: timedelta | None = None) -> s
         expire = datetime.now(tz=UTC) + expires_delta
     else:
         expire = datetime.now(tz=UTC) + timedelta(
-            minutes=config.access_token_expire_minutes
+            minutes=settings.access_token_expire_minutes
         )
 
     to_encode.update({"exp": expire})
     encoded_jwt = jwt.encode(
-        to_encode, config.secret_key.get_secret_value(), algorithm=config.algorithm
+        to_encode, settings.secret_key.get_secret_value(), algorithm=settings.algorithm
     )
 
     return encoded_jwt
@@ -43,8 +43,8 @@ def verify_token(token: str) -> str | None:
     try:
         payload = jwt.decode(
             token,
-            config.secret_key.get_secret_value(),
-            algorithms=[config.algorithm],
+            settings.secret_key.get_secret_value(),
+            algorithms=[settings.algorithm],
             options={"require": ["exp", "sub"]},
         )
     except jwt.InvalidTokenError:

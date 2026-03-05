@@ -1,8 +1,8 @@
 from fastapi import APIRouter, HTTPException, status
 from sqlalchemy import select
 
+from app.api.deps import CurrentUserDep, SessionDep
 from app.core.security import hash_password
-from app.deps import CurrentUserDep, SessionDep
 from app.models import UserCreate, UserPublic
 from app.schema import User
 

@@ -18,7 +18,13 @@ TokenDep = Annotated[str, Depends(oauth2_scheme)]
 
 async def get_session() -> AsyncGenerator[AsyncSession]:
     async with async_session() as session:
-        yield session
+        try:
+            yield session
+        except Exception:
+            await session.rollback()
+            raise
+        finally:
+            await session.close()
 
 
 SessionDep = Annotated[AsyncSession, Depends(get_session)]

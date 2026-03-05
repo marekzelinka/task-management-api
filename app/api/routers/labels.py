@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException, status
 from sqlalchemy import func, select
 
-from app.deps import CurrentUserDep, PaginationParamsDep, SessionDep
+from app.api.deps import CurrentUserDep, PaginationParamsDep, SessionDep
 from app.models import LabelCreate, LabelPublic, LabelUpdate, Paged, TaskPublic
 from app.schema import Label, Task
 

@@ -1,4 +1,4 @@
-from typing import Annotated
+from typing import Annotated, Literal
 
 from pydantic import (
     AnyUrl,
@@ -22,35 +22,43 @@ def parse_cors(v: str | list[str] | None) -> list[str] | str:
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
 
-    # Database
-    pghost: str
-    pgdatabase: str
-    pguser: str
-    pgpassword: str
+    # Database configuration
+    postgres_user: str
+    postgres_password: str
+    postgres_host: str
+    postgres_port: int = 5432
+    postgres_name: str
 
     @computed_field
     @property
     def sqlalchemy_database_uri(self) -> PostgresDsn:
         return PostgresDsn.build(
             scheme="postgresql+asyncpg",
-            username=self.pguser,
-            password=self.pgpassword,
-            host=self.pghost,
-            path=self.pgdatabase,
+            username=self.postgres_user,
+            password=self.postgres_password,
+            host=self.postgres_host,
+            port=self.postgres_port,
+            path=self.postgres_name,
         )
 
-    # CORS
+    # Application settings
+    api_v1_str: str = "/api/v1"
+    frontend_host: str = "http://localhost:5173"
+    environment: Literal["local", "staging", "production"] = "local"
+    log_level: str = "info"
     cors_origins: Annotated[list[AnyUrl] | str, BeforeValidator(parse_cors)] = []
 
     @computed_field
     @property
     def all_cors_origins(self) -> list[str]:
-        return [str(origin).rstrip("/") for origin in self.cors_origins]
+        return [str(origin).rstrip("/") for origin in self.cors_origins] + [
+            self.frontend_host
+        ]
 
-    # Auth
+    # Security settings
     secret_key: SecretStr
     algorithm: str = "HS256"
     access_token_expire_minutes: int = 30
 
 
-config = Settings()
+settings = Settings()

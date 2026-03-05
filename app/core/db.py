@@ -6,10 +6,12 @@ from sqlalchemy.ext.asyncio import (
 )
 from sqlalchemy.orm import DeclarativeBase
 
-from app.core.config import config
+from app.core.config import settings
 
 engine = create_async_engine(
-    str(config.sqlalchemy_database_uri), echo=True, connect_args={"ssl": True}
+    str(settings.sqlalchemy_database_uri),
+    echo=settings.environment == "local",
+    connect_args={"ssl": True},
 )
 async_session = async_sessionmaker(
     bind=engine, class_=AsyncSession, expire_on_commit=False
