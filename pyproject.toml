@@ -14,7 +14,7 @@ dependencies = [
     "sqlalchemy>=2.0.45",
     "uvicorn[standard]>=0.40.0",
     "pyjwt>=2.10.1",
-    "python-multipart>=0.0.21",
+    "python-multipart>=0.0.27",
     "pwdlib[argon2]>=0.3.0",
     "slowapi>=0.1.9",
 ]
